@@ -74,6 +74,7 @@ void io_handler_open(char* filename)
     info->filename = filename_cache;
     info->buffer = buffer_init(fp);
 
+    // finally push it into stack
     stack_push(FILE_INFO_STACK, info);
 }
 
@@ -89,13 +90,13 @@ void io_handler_getchar(CharStruct *ch)
         return;
     }
     wchar_t tmp_ch;
-    while (1)               // this loop while remove
+    while (1)
     {
         tmp_ch = buffer_getchar(info->buffer);
         info->column ++;
         if (tmp_ch == L'\\')
         {
-            if (buffer_getchar(info->buffer) == L'\n')
+            if (buffer_getchar(info->buffer) == L'\n')      // remove back slash and line break
             {
                 info->column = 0;
                 info->line ++;
@@ -110,6 +111,19 @@ void io_handler_getchar(CharStruct *ch)
     {
         info->line ++;
         info->column = 0;
+    }
+    else if (tmp_ch == WEOF)        // now the file end!
+    {
+        // let's do some clean work
+        stack_pop(FILE_INFO_STACK, NULL);
+        fclose(info->buffer->input_file);   // close the file at first
+        buffer_free(info->buffer);          // free the buffer blocks and buffer itself
+        ch->column = info->column;
+        ch->line = info->line;
+        ch->ch = tmp_ch;
+        ch->filename = info->filename;
+        free(info);
+        return;
     }
 
     ch->column = info->column;
