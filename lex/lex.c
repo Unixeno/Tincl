@@ -8,14 +8,20 @@
 #include "../io/io_handler.h"
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef enum
 {
     STATE_INIT,
+    STATE_FINAL,
     STATE_NUMBER,
     STATE_FLOAT,
     STATE_IDENTIFIER,
+    STATE_MAYBE_COMMENT,
     STATE_S_COMMENT,
+    STATE_M_COMMENT,
+    STATE_M_COMMENT_MAYBE_END,
+
 }LexState;
 
 int lex_init(char *source_filename)
@@ -77,16 +83,30 @@ void _lex_parser_identifier()
     tmp_token.token_type = TOKEN_IDENTIFIER;
 }
 
-void _lex_parser_s_comment()
+void _lex_parser_m_comment()
 {
     CharStruct ch;
     while (1)
     {
         io_handler_getchar(&ch);
-        if (ch.ch == '\n')
+        if (lex_state == STATE_M_COMMENT)
         {
-            io_handler_ungetchar();
-            break;
+            if (ch.ch == '*')
+            {
+                lex_state = STATE_M_COMMENT_MAYBE_END;
+            }
+            continue;
+        }
+        else if (lex_state == STATE_M_COMMENT_MAYBE_END)
+        {
+            if (ch.ch == '/')
+            {
+                break;
+            }
+            else
+            {
+                lex_state = STATE_M_COMMENT;
+            }
         }
     }
 }
@@ -99,51 +119,82 @@ int lex_gettoken(Token *token)
     while (1)
     {
         io_handler_getchar(&ch);
-        if (lex_state == STATE_INIT)
+        switch (lex_state)
         {
-            tmp_token.filename = ch.filename;
-            tmp_token.column = ch.column;
-            tmp_token.line = ch.line;
-            if (iswspace(ch.ch) || ch.ch == '\n')                // ignore white space and line break
+            case STATE_INIT:
             {
-                io_handler_reset();
-                continue;
-            }
-            else if (ch.ch == WEOF)
-            {
-                tmp_token.token_type = TOKEN_END;
-                wcscpy(tmp_token.token_string, L"END_OF_FILE_TOKEN");
-                break;
-            }
-            else if (iswdigit(ch.ch))
-            {
-                lex_state = STATE_NUMBER;
-            }
-            else if (iswalpha(ch.ch) || ch.ch == '_')
-            {
-                lex_state = STATE_IDENTIFIER;
-                _lex_parser_identifier();
-                break;
-            }
-            else if (ch.ch == '/')
-            {
-                io_handler_getchar(&ch);        // check if it is a comment
-                if (ch.ch == '/')
+                tmp_token.filename = ch.filename;
+                tmp_token.column = ch.column;
+                tmp_token.line = ch.line;
+                if (iswspace(ch.ch) || ch.ch == '\n')    // ignore white space and line break
                 {
-                    // it is a single line comment!
-                    _lex_parser_s_comment();
-                    io_handler_reset();         // just ignore comment
-                    continue;
+                    io_handler_reset();
+                    break;
                 }
-                else
+                else if (ch.ch == WEOF)                 // meet the end of this file
                 {
-                    io_handler_ungetchar();     // not a comment, put the char back
-                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
-                    tmp_token.token_type = TOKEN_DIV;
+                    tmp_token.token_type = TOKEN_END;
+                    wcscpy(tmp_token.token_string, L"END_OF_FILE_TOKEN");
+                    lex_state = STATE_FINAL;
+                    break;
+                }
+                else if (iswdigit(ch.ch))
+                {
+                    lex_state = STATE_NUMBER;
+                    break;
+                }
+                else if (iswalpha(ch.ch) || ch.ch == '_')
+                {
+                    lex_state = STATE_IDENTIFIER;
+                    _lex_parser_identifier();
+                    lex_state = STATE_FINAL;
+                    break;
+                }
+                else if (ch.ch == '/')
+                {
+                    lex_state = STATE_MAYBE_COMMENT;        // maybe a comment?
                     break;
                 }
             }
+            case STATE_MAYBE_COMMENT:
+            {
+                if (ch.ch == '/')
+                {
+                    lex_state = STATE_S_COMMENT;    // yep, it's a single line comment
+                }
+                else if (ch.ch == '*')
+                {
+                    lex_state = STATE_M_COMMENT;    // it's a multi line comment
+                    _lex_parser_m_comment();
+                    io_handler_reset();             // the parser function won't reset the buffer
+                    lex_state = STATE_INIT;         // so we should call it here
+                }
+                else
+                {
+                    lex_state = STATE_FINAL;
+                    io_handler_ungetchar();         // just a div, so we should push back the next char
+                    tmp_token.token_type = TOKEN_DIV;
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                }
+                break;
+            }
+            case STATE_S_COMMENT:
+            {
+                if (ch.ch == '\n' || ch.ch == WEOF)          // end of comment
+                {
+                    lex_state = STATE_INIT; // back to the initial state
+                    io_handler_reset();     // just ignore the comment and the line break
+                }
+                break;
+            }
+            default:
+            {
+                fputs("state error", stderr);
+                exit(-1);
+            }
         }
+        if (lex_state == STATE_FINAL)
+            break;
     }
     memcpy(token, &tmp_token, sizeof(Token));
 }
@@ -187,7 +238,7 @@ static char *TokenTypeString[] = {
         "TOKEN_QUESTION",     // ?
 };
 
-char *lex_get_token_string(TokenType type)
+const char *lex_get_token_string(TokenType type)
 {
     return TokenTypeString[type];
 }

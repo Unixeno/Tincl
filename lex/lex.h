@@ -62,5 +62,5 @@ typedef struct
 
 int lex_init(char *source_filename);
 int lex_gettoken(Token *token);
-char *lex_get_token_string(TokenType type);
+const char *lex_get_token_string(TokenType type);
 #endif //C_LEX_H
