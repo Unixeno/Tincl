@@ -13,6 +13,7 @@ typedef enum
 {
     STATE_INIT,
     STATE_NUMBER,
+    STATE_FLOAT,
     STATE_IDENTIFIER,
     STATE_S_COMMENT,
 }LexState;
@@ -67,7 +68,7 @@ void _lex_parser_identifier()
     while (1)
     {
         io_handler_getchar(&ch);
-        if (iswalpha(ch.ch) || ch.ch == '_')
+        if (iswalnum(ch.ch) || ch.ch == '_')
             continue;
         io_handler_ungetchar();
         break;
@@ -75,6 +76,21 @@ void _lex_parser_identifier()
     io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
     tmp_token.token_type = TOKEN_IDENTIFIER;
 }
+
+void _lex_parser_s_comment()
+{
+    CharStruct ch;
+    while (1)
+    {
+        io_handler_getchar(&ch);
+        if (ch.ch == '\n')
+        {
+            io_handler_ungetchar();
+            break;
+        }
+    }
+}
+
 
 int lex_gettoken(Token *token)
 {
@@ -88,24 +104,44 @@ int lex_gettoken(Token *token)
             tmp_token.filename = ch.filename;
             tmp_token.column = ch.column;
             tmp_token.line = ch.line;
-            if (ch.ch == WEOF)
+            if (iswspace(ch.ch) || ch.ch == '\n')                // ignore white space and line break
             {
+                io_handler_reset();
+                continue;
+            }
+            else if (ch.ch == WEOF)
+            {
+                tmp_token.token_type = TOKEN_END;
+                wcscpy(tmp_token.token_string, L"END_OF_FILE_TOKEN");
                 break;
             }
             else if (iswdigit(ch.ch))
             {
                 lex_state = STATE_NUMBER;
             }
-            else if (iswspace(ch.ch))
-            {
-                io_handler_reset();
-                continue;
-            }
             else if (iswalpha(ch.ch) || ch.ch == '_')
             {
                 lex_state = STATE_IDENTIFIER;
                 _lex_parser_identifier();
                 break;
+            }
+            else if (ch.ch == '/')
+            {
+                io_handler_getchar(&ch);        // check if it is a comment
+                if (ch.ch == '/')
+                {
+                    // it is a single line comment!
+                    _lex_parser_s_comment();
+                    io_handler_reset();         // just ignore comment
+                    continue;
+                }
+                else
+                {
+                    io_handler_ungetchar();     // not a comment, put the char back
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                    tmp_token.token_type = TOKEN_DIV;
+                    break;
+                }
             }
         }
     }
@@ -114,6 +150,7 @@ int lex_gettoken(Token *token)
 
 static char *TokenTypeString[] = {
         "TOKEN_IDENTIFIER",   // normal identifier
+        "TOKEN_END",
         "TOKEN_INTEGER",      // a integer number
         "TOKEN_FLOAT",        // float number, always be double
         "TOKEN_PLUS",         // +

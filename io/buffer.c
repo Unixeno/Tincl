@@ -161,15 +161,14 @@ size_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token)
         if (block_pos == BUFFER_BLOCK_SIZE)             // now we are at the end of this block
         {                                               // so the next char is in the next block
             current_block = current_block->next;
-
-
-
             block_pos = 0;
         }
         token[token_pos] = current_block->buffer[block_pos];
         token_pos++;
         block_pos++;
     }
+    token[token_pos] = 0;           // end
+
     // free unused blocks
     current_block = buffer->first_block;
     while (current_block != buffer->current_block)

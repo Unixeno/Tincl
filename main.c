@@ -7,13 +7,13 @@
 #include "lex/lex.h"
 int main() {
 
-    lex_init("test.cmm");
+    lex_init("test.tc");
     Token token;
-    lex_gettoken(&token);
-    printf("[%s:%d:%d][%s]=>%ls\n", token.filename, token.line, token.column,
-            lex_get_token_string(token.token_type), token.token_string);
-    lex_gettoken(&token);
-    printf("[%s:%d:%d][%s]=>%ls\n", token.filename, token.line, token.column,
-           lex_get_token_string(token.token_type), token.token_string);
+    do
+    {
+        lex_gettoken(&token);
+        printf("[%s:%d:%d][%s]=>%ls\n", token.filename, token.line, token.column,
+               lex_get_token_string(token.token_type), token.token_string);
+    }while (token.token_type != TOKEN_END);
     return 0;
 }

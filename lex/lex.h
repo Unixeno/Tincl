@@ -13,6 +13,7 @@
 typedef enum
 {
     TOKEN_IDENTIFIER,   // normal identifier
+    TOKEN_END,          // end of file
     TOKEN_INTEGER,      // a integer number
     TOKEN_FLOAT,        // float number, always be double
     TOKEN_PLUS,         // +
