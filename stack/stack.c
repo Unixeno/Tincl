@@ -51,7 +51,8 @@ int stack_pop(STACK stack, void *element)
 {
     if (stack != NULL && stack->top != 0)
     {
-        memcpy(element, stack->data + stack->top * stack->element_size - stack->element_size, stack->element_size);
+        if (element != NULL)
+            memcpy(element, stack->data + stack->top * stack->element_size - stack->element_size, stack->element_size);
         stack->top --;
         return 1;
     }
@@ -66,7 +67,7 @@ void stack_destroy(STACK stack)
 
 void *stack_top(STACK stack)
 {
-    if (stack == NULL)
+    if (stack == NULL || stack->top == 0)
     {
         return NULL;
     }
@@ -75,7 +76,7 @@ void *stack_top(STACK stack)
 
 int stack_gettop(STACK stack, void *element)
 {
-    if (stack == NULL)
+    if (stack == NULL || stack->top == 0 || element == NULL)
     {
         return 0;
     }
