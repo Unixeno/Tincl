@@ -14,8 +14,10 @@ typedef enum
 {
     TOKEN_IDENTIFIER,   // normal identifier
     TOKEN_END,          // end of file
+    TOKEN_CHAR,         // character
     TOKEN_INTEGER,      // a integer number
     TOKEN_FLOAT,        // float number, always be double
+    TOKEN_STRING,       // string
     TOKEN_PLUS,         // +
     TOKEN_MINUS,        // -
     TOKEN_MUL,          // *
@@ -52,12 +54,46 @@ typedef enum
 
 typedef struct
 {
+    union {
+        uint32_t value_uint32;
+        int32_t  value_int32;
+        uint64_t value_uint64;
+        int64_t  value_int64;
+    }value;
+    enum {
+        SUFFIX_INT_NONE,
+        SUFFIX_INT_L,
+        SUFFIX_INT_LL,
+        SUFFIX_INT_U,
+        SUFFIX_INT_UL,
+        SUFFIX_INT_ULL
+    }suffix;
+}Integer;
+
+typedef struct
+{
+    union {
+        float  value_float;
+        double value_double;
+    }value;
+    enum {
+        SUFFIX_FLT_NONE,
+        SUFFIX_FLT_F
+    }suffix;
+}Float;
+
+typedef struct
+{
     TokenType token_type;
     wchar_t token_string[LEX_TOKEN_LENGTH];
     char *filename;
     uint32_t line;
     uint32_t true_line;
     uint32_t column;
+    union {
+        Integer integer;
+        Float   floats;
+    }data;
 }Token;
 
 int lex_init(char *source_filename);

@@ -14,7 +14,12 @@ typedef enum
 {
     STATE_INIT,
     STATE_FINAL,
+    STATE_CHAR,
+    STATE_STRING,
+    STATE_STRING_NOT_END,
+    STATE_ESCAPE_CHAR,
     STATE_NUMBER,
+    STATE_NUMBER_SUFFIX,
     STATE_FLOAT,
     STATE_IDENTIFIER,
     STATE_MAYBE_COMMENT,
@@ -129,33 +134,37 @@ int lex_gettoken(Token *token)
                 if (iswspace(ch.ch) || ch.ch == '\n')    // ignore white space and line break
                 {
                     io_handler_reset();
-                    break;
                 }
                 else if (ch.ch == WEOF)                 // meet the end of this file
                 {
                     tmp_token.token_type = TOKEN_END;
                     wcscpy(tmp_token.token_string, L"END_OF_FILE_TOKEN");
                     lex_state = STATE_FINAL;
-                    break;
                 }
                 else if (iswdigit(ch.ch))
                 {
                     lex_state = STATE_NUMBER;
-                    break;
                 }
                 else if (iswalpha(ch.ch) || ch.ch == '_')
                 {
                     lex_state = STATE_IDENTIFIER;
                     _lex_parser_identifier();
                     lex_state = STATE_FINAL;
-                    break;
                 }
                 else if (ch.ch == '/')
                 {
                     lex_state = STATE_MAYBE_COMMENT;        // maybe a comment?
-                    break;
                 }
-            }
+                else if (ch.ch == '\'')
+                {
+                    lex_state = STATE_CHAR;
+                }
+                else if (ch.ch == '"')
+                {
+                    lex_state = STATE_STRING;
+                }
+                break;
+            }   // end STATE_INIT state
             case STATE_MAYBE_COMMENT:
             {
                 if (ch.ch == '/')
@@ -187,6 +196,128 @@ int lex_gettoken(Token *token)
                 }
                 break;
             }
+            case STATE_NUMBER:
+            {
+                if (iswdigit(ch.ch))
+                {
+                    continue;
+                }
+                else if (ch.ch == L'.')
+                {
+                    lex_state = STATE_FLOAT;
+                }
+                else if (iswalpha(ch.ch))
+                {
+                    lex_state = STATE_NUMBER_SUFFIX;
+                    io_handler_ungetchar();                 // put back the suffix, cause we parse all
+                                                            //   suffix in suffix state.
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                }
+                else
+                {
+                    io_handler_ungetchar();                 // current char is not a part of this number
+                                                            //   so we should put it back.
+                    tmp_token.token_type = TOKEN_INTEGER;
+                    tmp_token.data.integer.suffix = SUFFIX_INT_NONE;
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                    lex_state = STATE_FINAL;
+                }
+                break;
+            }
+            case STATE_NUMBER_SUFFIX:
+            {
+                if (iswalpha(ch.ch))
+                {
+                    continue;
+                }
+                else
+                {
+                    io_handler_ungetchar();
+
+                    wchar_t suffix[LEX_TOKEN_LENGTH];
+                    io_handler_gettoken(suffix, LEX_TOKEN_LENGTH);
+                    if (wcscmp(suffix, L"l") == 0|| wcscmp(suffix, L"L") == 0)
+                    {
+                        tmp_token.data.integer.suffix = SUFFIX_INT_L;
+                    }
+                    else if (wcscmp(suffix, L"ll") == 0 || wcscmp(suffix, L"LL") == 0)
+                    {
+                        tmp_token.data.integer.suffix = SUFFIX_INT_L;
+                    }
+                    else if (wcscmp(suffix, L"u") == 0 || wcscmp(suffix, L"U") == 0)
+                    {
+                        tmp_token.data.integer.suffix = SUFFIX_INT_U;
+                    }
+                    else if (wcscmp(suffix, L"ul") == 0 || wcscmp(suffix, L"UL") == 0)
+                    {
+                        tmp_token.data.integer.suffix = SUFFIX_INT_UL;
+                    }
+                    else if (wcscmp(suffix, L"ull") == 0 || wcscmp(suffix, L"ULL") == 0)
+                    {
+                        tmp_token.data.integer.suffix = SUFFIX_INT_ULL;
+                    }
+                    else
+                    {
+                        fwprintf(stderr, L"Unknown suffix '%ls' behind %ls\n",suffix, tmp_token.token_string);
+                        exit(-1);
+                    }
+                }
+                lex_state = STATE_FINAL;
+
+            }
+            case STATE_FLOAT:
+            {
+                if (iswdigit(ch.ch))
+                {
+                    continue;
+                }
+                else
+                {
+                    io_handler_ungetchar();
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                    tmp_token.token_type = TOKEN_FLOAT;
+                    lex_state = STATE_FINAL;
+                }
+                break;
+            }
+            case STATE_CHAR:
+            {
+                if (ch.ch == '\\')
+                {
+                    lex_state = STATE_ESCAPE_CHAR;
+                }
+                else if (ch.ch == '\'')
+                {
+                    lex_state = STATE_FINAL;
+                    tmp_token.token_type = TOKEN_CHAR;
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                }
+                break;
+            }
+            case STATE_STRING:
+            {
+                if (ch.ch == L'\\')
+                {
+                    lex_state = STATE_STRING_NOT_END;
+                }
+                else if(ch.ch == '"')       // end of string
+                {
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                    tmp_token.token_type = TOKEN_STRING;
+                    lex_state = STATE_FINAL;
+                }
+                else if (ch.ch == '\n')     // invalid char
+                {
+                    fputs("error: invalid char \\x0d in string", stderr);
+                    exit(-1);
+                }
+                break;
+            }
+            case STATE_STRING_NOT_END:
+            {
+                lex_state = STATE_STRING;       // just pass the next char
+                break;
+            }
             default:
             {
                 fputs("state error", stderr);
@@ -202,8 +333,10 @@ int lex_gettoken(Token *token)
 static char *TokenTypeString[] = {
         "TOKEN_IDENTIFIER",   // normal identifier
         "TOKEN_END",
+        "TOKEN_CHAR",         // character
         "TOKEN_INTEGER",      // a integer number
         "TOKEN_FLOAT",        // float number, always be double
+        "TOKEN_STRING",
         "TOKEN_PLUS",         // +
         "TOKEN_MINUS",        // -
         "TOKEN_MUL",          // *
