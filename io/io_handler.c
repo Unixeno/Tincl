@@ -78,6 +78,15 @@ void io_handler_open(char* filename)
     stack_push(FILE_INFO_STACK, info);
 }
 
+void _io_handler_clean(FILE_INFO *info)
+{
+    stack_pop(FILE_INFO_STACK, NULL);
+    fclose(info->buffer->input_file);   // close the file at first
+    buffer_free(info->buffer);          // free the buffer blocks and buffer itself
+    free(info);
+    return;
+}
+
 void io_handler_getchar(CharStruct *ch)
 {
     FILE_INFO *info = stack_top(FILE_INFO_STACK);
@@ -115,14 +124,15 @@ void io_handler_getchar(CharStruct *ch)
     else if (tmp_ch == WEOF)        // now the file end!
     {
         // let's do some clean work
-        stack_pop(FILE_INFO_STACK, NULL);
-        fclose(info->buffer->input_file);   // close the file at first
-        buffer_free(info->buffer);          // free the buffer blocks and buffer itself
-        ch->column = info->column;
-        ch->line = info->line;
-        ch->ch = tmp_ch;
-        ch->filename = info->filename;
-        free(info);
+//        stack_pop(FILE_INFO_STACK, NULL);
+//        fclose(info->buffer->input_file);   // close the file at first
+//        buffer_free(info->buffer);          // free the buffer blocks and buffer itself
+//        ch->column = info->column;
+//        ch->line = info->line;
+//        ch->ch = tmp_ch;
+//        ch->filename = info->filename;
+//        free(info);
+
         return;
     }
 
@@ -166,7 +176,10 @@ void io_handler_gettoken(wchar_t *token_string, size_t max_length)
     {
         return;
     }
-    buffer_fetchtoken(info->buffer, token_string);
+    if (buffer_fetchtoken(info->buffer, token_string) == 0)
+    {
+        _io_handler_clean(info);
+    }
 }
 
 void io_handler_reset()

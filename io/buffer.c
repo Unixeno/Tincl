@@ -163,6 +163,11 @@ size_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token)
             current_block = current_block->next;
             block_pos = 0;
         }
+        if (current_block->buffer[block_pos] == WEOF)   // return 0 to tell caller we meet WEOF
+        {
+            return 0;
+        }
+
         token[token_pos] = current_block->buffer[block_pos];
         token_pos++;
         block_pos++;

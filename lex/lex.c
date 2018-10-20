@@ -5,7 +5,8 @@
 #include <stdint.h>
 #include <ctype.h>
 #include "lex.h"
-#include "../io/io_handler.h"
+#include "io/io_handler.h"
+#include "io/error_handler.h"
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
@@ -20,6 +21,10 @@ typedef enum
     STATE_ESCAPE_CHAR,
     STATE_NUMBER,
     STATE_NUMBER_SUFFIX,
+    STATE_NUMBER_SPECIAL,
+    STATE_NUMBER_HEX,
+    STATE_NUMBER_BIN,
+    STATE_NUMBER_OCT,
     STATE_FLOAT,
     STATE_IDENTIFIER,
     STATE_MAYBE_COMMENT,
@@ -46,31 +51,11 @@ bool _iswhexdigit(wchar_t ch)
         return false;
 }
 
-void _lex_parser_number_hex()
+bool _iswoctdigit(wchar_t ch)
 {
-    CharStruct ch;
-    while (1)
-    {
-        io_handler_getchar(&ch);
-        if (!_iswhexdigit(ch.ch))
-        {
-            break;
-        }
-    }
-}
-
-void _lex_parser_number()
-{
-    CharStruct ch;
-    while (1)
-    {
-        io_handler_getchar(&ch);
-        if (iswdigit(ch.ch))
-        {
-            continue;
-        }
-    }
-
+    if (wcschr(L"01234567", ch))
+        return true;
+    return false;
 }
 
 void _lex_parser_identifier()
@@ -140,6 +125,10 @@ int lex_gettoken(Token *token)
                     tmp_token.token_type = TOKEN_END;
                     wcscpy(tmp_token.token_string, L"END_OF_FILE_TOKEN");
                     lex_state = STATE_FINAL;
+                }
+                else if (ch.ch == L'0')
+                {
+                    lex_state = STATE_NUMBER_SPECIAL;
                 }
                 else if (iswdigit(ch.ch))
                 {
@@ -258,8 +247,7 @@ int lex_gettoken(Token *token)
                     }
                     else
                     {
-                        fwprintf(stderr, L"Unknown suffix '%ls' behind %ls\n",suffix, tmp_token.token_string);
-                        exit(-1);
+                        error_print(tmp_token, "invalid suffix \"%ls\" on floating constant\n    %ls\n", suffix, tmp_token.token_string);
                     }
                 }
                 lex_state = STATE_FINAL;
