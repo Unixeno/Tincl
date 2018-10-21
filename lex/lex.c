@@ -296,8 +296,8 @@ int lex_gettoken(Token *token)
                 }
                 else if (ch.ch == '\n')     // invalid char
                 {
-                    fputs("error: invalid char \\x0d in string", stderr);
-                    exit(-1);
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                    error_print(tmp_token, "missing '\"' in string %ls", tmp_token.token_string);
                 }
                 break;
             }
