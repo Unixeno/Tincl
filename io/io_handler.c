@@ -121,8 +121,8 @@ void io_handler_getchar(CharStruct *ch)
         info->line ++;
         info->column = 0;
     }
-    else if (tmp_ch == WEOF)        // now the file end!
-    {
+//    else if (tmp_ch == WEOF)        // now the file end!
+//    {
         // let's do some clean work
 //        stack_pop(FILE_INFO_STACK, NULL);
 //        fclose(info->buffer->input_file);   // close the file at first
@@ -132,9 +132,9 @@ void io_handler_getchar(CharStruct *ch)
 //        ch->ch = tmp_ch;
 //        ch->filename = info->filename;
 //        free(info);
-
-        return;
-    }
+//
+//        return;
+//    }
 
     ch->column = info->column;
     ch->line = info->line;

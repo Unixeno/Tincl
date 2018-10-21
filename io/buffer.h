@@ -24,7 +24,7 @@ typedef struct
 BUFFER *buffer_init(FILE *input_file);
 wchar_t buffer_getchar(BUFFER *buffer);
 int buffer_ungetchar(BUFFER *buffer);
-size_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token);
+uint8_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token);
 void buffer_free(BUFFER *buffer);
 void buffer_reset(BUFFER *buffer);
 #endif //C_BUFFER_H

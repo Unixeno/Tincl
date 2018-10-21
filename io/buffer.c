@@ -145,12 +145,13 @@ int buffer_ungetchar(BUFFER *buffer)
     }
 }
 
-size_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token)
+uint8_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token)
 {
 //    size_t end_pos = buffer->current_pos - 1;
     size_t block_pos = buffer->begin_pos;
     size_t token_pos = 0;
     BUFFER_BLOCK *current_block = buffer->first_block;
+    uint8_t return_val = 1;
     while (1)
     {
         if (block_pos == buffer->current_pos)
@@ -165,7 +166,10 @@ size_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token)
         }
         if (current_block->buffer[block_pos] == WEOF)   // return 0 to tell caller we meet WEOF
         {
-            return 0;
+            return_val = 0;
+            token_pos++;
+            block_pos++;
+            break;
         }
 
         token[token_pos] = current_block->buffer[block_pos];
@@ -182,7 +186,7 @@ size_t buffer_fetchtoken(BUFFER *buffer, wchar_t *token)
     }
     buffer->first_block = current_block;
     buffer->begin_pos = buffer->current_pos;
-    return token_pos;
+    return return_val;
 }
 
 BUFFER_BLOCK *buffer_freeblock(BUFFER_BLOCK *block)
