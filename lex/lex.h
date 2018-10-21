@@ -13,6 +13,7 @@
 typedef enum
 {
     TOKEN_IDENTIFIER,   // normal identifier
+    TOKEN_KEYWORD,   // identifier
     TOKEN_END,          // end of file
     TOKEN_CHAR,         // character
     TOKEN_INTEGER,      // a integer number
@@ -27,21 +28,14 @@ typedef enum
     TOKEN_DOT,          // .
     TOKEN_COLON,        // :
     TOKEN_SEMICOLON,    // ;
-    TOKEN_PERSENT,      // %
-    TOKEN_DOLLAR,       // $
-    TOKEN_BACKSLASH,    // '\'
+    TOKEN_MOD,          // %
     TOKEN_LBRACKET,     // (
     TOKEN_RBRACKET,     // )
-    TOKEN_AMPERSAND,    // &
-    TOKEN_UNDERSCORE,   // _
-    TOKEN_AT,           // @
+    TOKEN_AND,          // &
     TOKEN_HASH,         // #
-    TOKEN_EXCLAMATION,  // !
-    TOKEN_CAREC,        // ^
+    TOKEN_NOT,          // !
+    TOKEN_XOR,          // ^
     TOKEN_TILDE,        // ~
-    TOKEN_BACKTICK,     // `
-    TOKEN_APOSTROPHE,   // '
-    TOKEN_QUOTE,        // "
     TOKEN_LCURLY_BRACKETS, // {
     TOKEN_RCURLY_BRACKETS, // }
     TOKEN_LSCUARE_BRACKETS,// [
@@ -50,6 +44,27 @@ typedef enum
     TOKEN_LESS_THAN,    // <
     TOKEN_GREATER_THAN, // >
     TOKEN_QUESTION,     // ?
+
+    TOKEN_PLUSPLUS,     // ++
+    TOKEN_MINUSMINUS,   // --
+    TOKEN_PLUSEQUAL,    // +=
+    TOKEN_MINUSEQUAL,   // -=
+    TOKEN_MULEQUAL,     // *=
+    TOKEN_DIVEQUAL,     // /=
+    TOKEN_DOUBLEEQUAL,  // ==
+    TOKEN_NOTEQUAL,     // !=
+    TOKEN_LEQUAL,       // <=
+    TOKEN_GEQUAL,       // >=
+    TOKEN_LOGICAL_AND,  // &&
+    TOKEN_LOGICAL_OR,   // ||
+    TOKEN_SHIFT_LEFT,   // <<
+    TOKEN_SHIFT_RIGHT,  // >>
+    TOKEN_AND_EQUAL,    // &=
+    TOKEN_OR_EQUAL,     // |=
+    TOKEN_XOR_EQUAL,    // ^=
+
+    TOKEN_SIZEOF,       // sizeof
+
 }TokenType;
 
 typedef struct

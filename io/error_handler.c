@@ -25,5 +25,6 @@ void error_print(Token token, const char* format, ...)
     vsnprintf(buffer, 128, format, arg_list);
     va_end(arg_list);
     fputs(buffer, stderr);
+    fputc('\n', stderr);
     exit(-1);
 }

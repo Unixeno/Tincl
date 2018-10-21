@@ -152,6 +152,171 @@ int lex_gettoken(Token *token)
                 {
                     lex_state = STATE_STRING;
                 }
+                else
+                {
+                    lex_state = STATE_FINAL;
+                    switch (ch.ch)
+                    {
+                        case ',':
+                            tmp_token.token_type = TOKEN_COMMA;
+                            break;
+                        case '.':
+                            tmp_token.token_type = TOKEN_DOT;
+                            break;
+                        case ':':
+                            tmp_token.token_type = TOKEN_COLON;
+                            break;
+                        case ';':
+                            tmp_token.token_type = TOKEN_SEMICOLON;
+                            break;
+                        case '(':
+                            tmp_token.token_type = TOKEN_LBRACKET;
+                            break;
+                        case ')':
+                            tmp_token.token_type = TOKEN_RBRACKET;
+                            break;
+                        case '{':
+                            tmp_token.token_type = TOKEN_LCURLY_BRACKETS;
+                            break;
+                        case '}':
+                            tmp_token.token_type = TOKEN_RCURLY_BRACKETS;
+                            break;
+                        case '[':
+                            tmp_token.token_type = TOKEN_LSCUARE_BRACKETS;
+                            break;
+                        case ']':
+                            tmp_token.token_type = TOKEN_RSCUARE_BRACKETS;
+                            break;
+                        case '%':
+                            tmp_token.token_type = TOKEN_MOD;
+                            break;
+                        case '?':
+                            tmp_token.token_type = TOKEN_QUESTION;
+                            break;
+                        case '#':
+                            tmp_token.token_type = TOKEN_HASH;
+                            break;
+                        case '~':
+                            tmp_token.token_type = TOKEN_TILDE;
+                            break;
+                        case '^':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_XOR_EQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_XOR;
+                            }
+                            break;
+                        case '+':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '+')
+                                tmp_token.token_type = TOKEN_PLUSPLUS;
+                            else if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_PLUSEQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_PLUS;
+                            }
+                            break;
+                        case '-':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '-')
+                                tmp_token.token_type = TOKEN_MINUSMINUS;
+                            else if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_MINUSEQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_MINUS;
+                            }
+                            break;
+                        case '=':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_DOUBLEEQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_EQUAL;
+                            }
+                            break;
+                        case '>':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_GEQUAL;
+                            else if (ch.ch == '>')
+                                tmp_token.token_type = TOKEN_SHIFT_RIGHT;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_GREATER_THAN;
+                            }
+                            break;
+                        case '<':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_LEQUAL;
+                            else if (ch.ch == '<')
+                                tmp_token.token_type = TOKEN_SHIFT_LEFT;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_LESS_THAN;
+                            }
+                            break;
+                        case '!':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_NOTEQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_NOT;
+                            }
+                            break;
+                        case '*':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_MULEQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_MUL;
+                            }
+                            break;
+                        case '&':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '&')
+                                tmp_token.token_type = TOKEN_LOGICAL_AND;
+                            else if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_AND_EQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_AND;
+                            }
+                            break;
+                        case '|':
+                            io_handler_getchar(&ch);
+                            if (ch.ch == '|')
+                                tmp_token.token_type = TOKEN_LOGICAL_OR;
+                            else if (ch.ch == '=')
+                                tmp_token.token_type = TOKEN_OR_EQUAL;
+                            else
+                            {
+                                io_handler_ungetchar();
+                                tmp_token.token_type = TOKEN_VERTICAL_BAR;
+                            }
+                            break;
+                        default:
+                            io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                            error_print(tmp_token, "stray '%ls' in program", tmp_token.token_string);
+                    }// end of switch
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
+                }
                 break;
             }   // end STATE_INIT state
             case STATE_MAYBE_COMMENT:
@@ -166,6 +331,12 @@ int lex_gettoken(Token *token)
                     _lex_parser_m_comment();
                     io_handler_reset();             // the parser function won't reset the buffer
                     lex_state = STATE_INIT;         // so we should call it here
+                }
+                else if (ch.ch == '=')
+                {
+                    lex_state = STATE_FINAL;
+                    tmp_token.token_type = TOKEN_DIVEQUAL;
+                    io_handler_gettoken(tmp_token.token_string, LEX_TOKEN_LENGTH);
                 }
                 else
                 {
@@ -320,11 +491,12 @@ int lex_gettoken(Token *token)
 
 static char *TokenTypeString[] = {
         "TOKEN_IDENTIFIER",   // normal identifier
-        "TOKEN_END",
+        "TOKEN_KEYWORD",   // identifier
+        "TOKEN_END",          // end of file
         "TOKEN_CHAR",         // character
         "TOKEN_INTEGER",      // a integer number
         "TOKEN_FLOAT",        // float number, always be double
-        "TOKEN_STRING",
+        "TOKEN_STRING",       // string
         "TOKEN_PLUS",         // +
         "TOKEN_MINUS",        // -
         "TOKEN_MUL",          // *
@@ -334,21 +506,14 @@ static char *TokenTypeString[] = {
         "TOKEN_DOT",          // .
         "TOKEN_COLON",        // :
         "TOKEN_SEMICOLON",    // ;
-        "TOKEN_PERSENT",      // %
-        "TOKEN_DOLLAR",       // $
-        "TOKEN_BACKSLASH",    // '\'
+        "TOKEN_MOD",          // %
         "TOKEN_LBRACKET",     // (
         "TOKEN_RBRACKET",     // )
-        "TOKEN_AMPERSAND",    // &
-        "TOKEN_UNDERSCORE",   // _
-        "TOKEN_AT",           // @
+        "TOKEN_AND",          // &
         "TOKEN_HASH",         // #
-        "TOKEN_EXCLAMATION",  // !
-        "TOKEN_CAREC",        // ^
+        "TOKEN_NOT",          // !
+        "TOKEN_XOR",          // ^
         "TOKEN_TILDE",        // ~
-        "TOKEN_BACKTICK",     // `
-        "TOKEN_APOSTROPHE",   // '
-        "TOKEN_QUOTE",        // "
         "TOKEN_LCURLY_BRACKETS", // {
         "TOKEN_RCURLY_BRACKETS", // }
         "TOKEN_LSCUARE_BRACKETS",// [
@@ -357,6 +522,24 @@ static char *TokenTypeString[] = {
         "TOKEN_LESS_THAN",    // <
         "TOKEN_GREATER_THAN", // >
         "TOKEN_QUESTION",     // ?
+
+        "TOKEN_PLUSPLUS",     // ++
+        "TOKEN_MINUSMINUS",   // --
+        "TOKEN_PLUSEQUAL",    // +=
+        "TOKEN_MINUSEQUAL",   // -=
+        "TOKEN_MULEQUAL",     // *=
+        "TOKEN_DIVEQUAL",     // /=
+        "TOKEN_DOUBLEEQUAL",  // ==
+        "TOKEN_NOTEQUAL",     // !=
+        "TOKEN_LEQUAL",       // <=
+        "TOKEN_GEQUAL",       // >=
+        "TOKEN_LOGICAL_AND",  // &&
+        "TOKEN_LOGICAL_OR",   // ||
+        "TOKEN_SHIFT_LEFT",   // <<
+        "TOKEN_SHIFT_RIGHT",  // >>
+        "TOKEN_AND_EQUAL",    // &=
+        "TOKEN_OR_EQUAL",     // |=
+        "TOKEN_XOR_EQUAL",    // ^=
 };
 
 const char *lex_get_token_string(TokenType type)
