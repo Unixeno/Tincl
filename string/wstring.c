@@ -10,7 +10,7 @@
 
 #define STRING_SIZE_INCREMENT 16
 
-int8_t _string_space_check(WString wstring, size_t need);
+static int8_t _wstring_space_check(WString wstring, size_t need);
 
 
 void wstring_delete(WString wstring)
@@ -39,9 +39,9 @@ WString wstring_create_from_int(int32_t data) {
     wstring->length = wcslen(wstring->data);
 }
 
-uint8_t wstring_append_char(WString wstring, wchar_t ch)
+uint8_t wstring_append_wchar(WString wstring, wchar_t ch)
 {
-    if (_string_space_check(wstring, 1))
+    if (_wstring_space_check(wstring, 1))
     {
         wstring->data[wstring->length++] = ch;
         wstring->data[wstring->length] = 0;
@@ -49,12 +49,12 @@ uint8_t wstring_append_char(WString wstring, wchar_t ch)
     return 0;           // 追加失败
 }
 
-uint8_t wstring_append_cstr(WString wstring, wchar_t* wstr)
+uint8_t wstring_append_wstr(WString wstring, wchar_t* wstr)
 {
     size_t str_len = wcslen(wstr);
-    if (_string_space_check(wstring, str_len))
+    if (_wstring_space_check(wstring, str_len))
     {
-        memcpy(wstring->data, wstr, str_len + 1);
+        memcpy(wstring->data, wstr, (str_len + 1) * sizeof(wchar_t));
         return 1;
     }
     else
@@ -63,16 +63,17 @@ uint8_t wstring_append_cstr(WString wstring, wchar_t* wstr)
     }
 }
 
-const wchar_t *wstring_get_cstr(WString wstring)
+const wchar_t *wstring_get_wstr(WString wstring)
 {
     return wstring->data;
 }
 
 int8_t _wstring_space_check(WString wstring, size_t need)
 {
-    if (wstring->length + 1 + need > wstring->size)
+    need *= sizeof(wchar_t);
+    if (wstring->length + sizeof(wchar_t) + need > wstring->size)
     {
-        size_t new_size = wstring->size + (need / STRING_SIZE_INCREMENT * STRING_SIZE_INCREMENT + 1);
+        size_t new_size = wstring->size + (need / STRING_SIZE_INCREMENT + 1) * STRING_SIZE_INCREMENT;
         void* new_space = realloc(wstring->data, new_size);
         if (new_space == NULL)
         {

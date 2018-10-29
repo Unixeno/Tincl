@@ -9,7 +9,7 @@
 
 #define STRING_SIZE_INCREMENT 16
 
-int8_t _string_space_check(String string, size_t need);
+static int8_t _string_space_check(String string, size_t need);
 
 
 void string_delete(String string)
