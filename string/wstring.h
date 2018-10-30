@@ -18,7 +18,8 @@ typedef struct
 void wstring_delete(WString wstring);
 WString wstring_create();
 WString wstring_create_from_int(int32_t data);
+WString wstring_create_from_wstring(WString source);
 uint8_t wstring_append_wchar(WString string, wchar_t wch);
-uint8_t wstring_append_wstr(WString string, wchar_t *wstr);
+uint8_t wstring_append_wstr(WString string, const wchar_t *wstr);
 const wchar_t *wstring_get_wstr(WString string);
 #endif //TINCL_WSTRING_H
